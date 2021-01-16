@@ -24,11 +24,13 @@
       </el-table-column>
       <el-table-column
         prop="type"
-        label="表单类型">
+        label="文本类型"
+        :formatter="typeData">
       </el-table-column>
       <el-table-column
         prop="isSKU"
-        label="是否为SKU">
+        label="是否为SKU"
+        :formatter="isSKUData">
       </el-table-column>
       <el-table-column
         prop="isDel"
@@ -77,7 +79,7 @@
           <el-input v-model="PropertyForm.nameCH"></el-input>
         </el-form-item>
         <el-form-item label="对应分类" prop="typeId">
-          <el-select v-model="shopTypeId" placeholder="请选择">
+          <el-select v-model="shopTypeId" placeholder="请选择" clearable>
             <el-option
               v-for="data in shopType1"
               :key="data.id"
@@ -86,7 +88,7 @@
               <span style="float: left">{{ data.name }}</span>
             </el-option>
           </el-select>
-          <el-select v-model="PropertyForm.typeId" placeholder="请选择">
+          <el-select v-model="PropertyForm.typeId" placeholder="请选择" clearable>
             <el-option
               v-for="data2 in shopType2"
               :key="data2.id"
@@ -128,7 +130,7 @@
           <el-input v-model="updateForm.nameCH"></el-input>
         </el-form-item>
         <el-form-item label="对应分类" prop="typeId">
-          <el-select v-model="shopTypeId" placeholder="请选择">
+          <el-select v-model="shopTypeId" placeholder="请选择" clearable>
             <el-option
               v-for="data in shopType1"
               :key="data.id"
@@ -137,7 +139,7 @@
               <span style="float: left">{{ data.name }}</span>
             </el-option>
           </el-select>
-          <el-select v-model="updateForm.typeId" placeholder="请选择">
+          <el-select v-model="updateForm.typeId" placeholder="请选择" clearable>
             <el-option
               v-for="data2 in shopType2"
               :key="data2.id"
@@ -312,6 +314,24 @@
           return "删除";
         }
       },
+      isSKUData:function (row,column,value,index) {
+        if(value==0){
+          return "是";
+        }else {
+          return "否";
+        }
+      },
+      typeData:function (row,column,value,index) {
+        if(value==0){
+          return "下拉框";
+        }else if(value==1){
+          return "单选框";
+        }else if(value==2){
+          return "复选框";
+        }else if(value==3){
+          return "输入框";
+        }
+      },
       /*分页*/
       handleSizeChange(val) {
         //console.log(`每页 ${val} 条`);
@@ -327,6 +347,8 @@
       /*处理新增弹框的第二个下拉框*/
       shopTypeId:function () {
         //console.log(this.shopTypeId)
+        this.PropertyForm.typeId="";
+
         this.pid=this.shopTypeId;
         this.$ajax.get("http://localhost:8080/api/type/selectTypeBypid?pid="+this.pid).then(res=>{
           //console.log(res.data.data);
