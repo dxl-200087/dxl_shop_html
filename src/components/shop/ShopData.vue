@@ -268,7 +268,7 @@
         this.queryShopTable();
       },
       isdelData:function (row,column,value,index) {
-        if(value=0){
+        if(value==0){
           return "否";
         }else {
           return "是";
