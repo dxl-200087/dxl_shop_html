@@ -51,7 +51,7 @@
         prop="id"
         label="操作">
         <template slot-scope="scope">
-          <el-button type="primary" size="mini">修改</el-button>
+          <el-button type="primary" size="mini" @click="toUpdatePropertyForm">修改</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -70,7 +70,7 @@
 
     <!--新增模板-->
     <el-dialog title="新增商品" :visible.sync="savePropertyForm">
-      <el-form ref="PropertyForm" :model="PropertyForm" label-width="80px" style="width: 500px;">
+      <el-form ref="PropertyForm" :model="PropertyForm" :rules="rules" label-width="80px" style="width: 500px;">
         <el-form-item label="属性名称" prop="name">
           <el-input v-model="PropertyForm.name"></el-input>
         </el-form-item>
@@ -114,7 +114,7 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="savePropertyForm = false">取 消</el-button>
-        <el-button type="primary" @click="savePropertyData">确 定</el-button><!--@click="saveShopData('saveForm')"-->
+        <el-button type="primary" @click="savePropertyData('PropertyForm')">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -142,11 +142,25 @@
           typeId:"",
           type:"",
           isSKU:""
+        },
+        rules:{
+          name:[{ required: true, message: '请输入属性名称', trigger: 'change' }],
+          nameCH:[{ required: true, message: '请输入中文属性', trigger: 'change' }],
+          typeId:[{ required: true, message: '请选择文本类型', trigger: 'change' }],
+          type:[{ required: true, message: '请选择文本类型', trigger: 'change' }],
+          isSKU:[{ required: true, message: '请选择文本类型', trigger: 'change' }]
         }
       }
     },created:function () {
         this.queryPropertyTable();
     },methods:{
+      /*修改弹框的处理*/
+      toUpdatePropertyForm:function(){
+
+      },
+
+
+
       /*处理新增弹框的下拉框*/
       toSavePropertyForm:function(){
         this.savePropertyForm=true;
@@ -158,14 +172,18 @@
         })
       },
       /*提交新增*/
-      savePropertyData:function(){
-        this.$ajax.post("http://localhost:8080/api/property/saveProperty?"+this.$qs.stringify(this.PropertyForm)).then(res=>{
-          //console.log(res.data.data)
-          alert(res.data.message);
-          this.savePropertyForm=false;
-          this.queryPropertyTable();
-        }).catch(re=>{
-          console.log(re);
+      savePropertyData:function(PropertyForm){
+        this.$refs[PropertyForm].validate((flog) => {
+          if(flog==true){
+            this.$ajax.post("http://localhost:8080/api/property/saveProperty?"+this.$qs.stringify(this.PropertyForm)).then(res=>{
+              //console.log(res.data.data)
+              alert(res.data.message);
+              this.savePropertyForm=false;
+              this.queryPropertyTable();
+            }).catch(re=>{
+              console.log(re);
+            })
+          }
         })
       },
       /*查询展示属性数据*/
