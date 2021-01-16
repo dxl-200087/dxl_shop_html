@@ -51,7 +51,7 @@
         prop="id"
         label="操作">
         <template slot-scope="scope">
-          <el-button type="primary" size="mini" @click="toUpdatePropertyForm">修改</el-button>
+          <el-button type="primary" size="mini" @click="toUpdatePropertyForm(scope.row)">修改</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -65,7 +65,6 @@
       layout="total, sizes, prev, pager, next, jumper"
       :total="count">
     </el-pagination>
-
 
 
     <!--新增模板-->
@@ -118,6 +117,64 @@
       </div>
     </el-dialog>
 
+
+    <!--修改模板-->
+    <el-dialog title="新增商品" :visible.sync="updatePropertyForm">
+      <el-form ref="updateForm" :model="updateForm" :rules="rules" label-width="80px" style="width: 500px;">
+        <el-form-item label="属性名称" prop="name">
+          <el-input v-model="updateForm.name"></el-input>
+        </el-form-item>
+        <el-form-item label="中文属性" prop="nameCH">
+          <el-input v-model="updateForm.nameCH"></el-input>
+        </el-form-item>
+        <el-form-item label="对应分类" prop="typeId">
+          <el-select v-model="shopTypeId" placeholder="请选择">
+            <el-option
+              v-for="data in shopType1"
+              :key="data.id"
+              :label="data.name"
+              :value="data.id">
+              <span style="float: left">{{ data.name }}</span>
+            </el-option>
+          </el-select>
+          <el-select v-model="updateForm.typeId" placeholder="请选择">
+            <el-option
+              v-for="data2 in shopType2"
+              :key="data2.id"
+              :label="data2.name"
+              :value="data2.id">
+              <span style="float: left">{{ data2.name }}</span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="文本类型" prop="type">
+          <el-radio-group v-model="updateForm.type">
+            <el-radio :label="0">下拉框</el-radio>
+            <el-radio :label="1">单选框</el-radio>
+            <el-radio :label="2">复选框</el-radio>
+            <el-radio :label="3">输入框</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="是否SKU" prop="isSKU">
+          <el-radio-group v-model="updateForm.isSKU">
+            <el-radio :label="0">是SKU</el-radio>
+            <el-radio :label="1">否SKU</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="是否删除" prop="isDel">
+          <el-radio-group v-model="updateForm.isDel">
+            <el-radio :label="0">不删</el-radio>
+            <el-radio :label="1">删除</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="updatePropertyForm = false">取 消</el-button>
+        <el-button type="primary" @click="updatePropertyData('updateForm')">确 定</el-button>
+      </div>
+    </el-dialog>
+
+
   </div>
 </template>
 
@@ -132,6 +189,7 @@
         limits:[3,5,8,10],
         count:0,
         savePropertyForm:false,
+        updatePropertyForm:false,
         pid:1,
         shopType1:[],
         shopType2:[],
@@ -143,33 +201,83 @@
           type:"",
           isSKU:""
         },
+        updateForm:{
+          id:"",
+          name:"",
+          nameCH:"",
+          typeId:"",
+          type:"",
+          isSKU:"",
+          isDel:""
+        },
         rules:{
           name:[{ required: true, message: '请输入属性名称', trigger: 'change' }],
           nameCH:[{ required: true, message: '请输入中文属性', trigger: 'change' }],
-          typeId:[{ required: true, message: '请选择文本类型', trigger: 'change' }],
+          typeId:[{ required: true, message: '请选择对应分类', trigger: 'change' }],
           type:[{ required: true, message: '请选择文本类型', trigger: 'change' }],
-          isSKU:[{ required: true, message: '请选择文本类型', trigger: 'change' }]
+          isSKU:[{ required: true, message: '请选择是否SKU', trigger: 'change' }],
+          isDel:[{ required: true, message: '请选择是否删除', trigger: 'change' }],
         }
       }
     },created:function () {
         this.queryPropertyTable();
     },methods:{
       /*修改弹框的处理*/
-      toUpdatePropertyForm:function(){
-
+      toUpdatePropertyForm:function(row){
+        this.updatePropertyForm=true;
+        this.querySelectOne();
+        this.$ajax.get("http://localhost:8080/api/property/selectPropertyByid?id="+row.id).then(res=>{
+          //console.log(res.data.data)
+          this.updateForm=res.data.data;
+          this.queryTypeByidData(this.updateForm.typeId);
+        }).catch(re=>{
+          console.log(re);
+        })
       },
 
+      /*根据typeId查询回显对应分类的单条数据*/
+      queryTypeByidData:function(id){
+        //console.log(this.updateForm)
+        this.$ajax.get("http://localhost:8080/api/type/selectTypeByid?id="+id).then(res=>{
+          //console.log(res.data.data)
+          this.shopTypeId=res.data.data.pid;
+          //console.log(this.shopTypeId)
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
 
+      /*修改提交*/
+      updatePropertyData:function(updateForm){
+        console.log(this.updateForm)
+        this.$refs[updateForm].validate((flog) => {
+          if(flog==true){
+            this.$ajax.post("http://localhost:8080/api/property/updateProperty?"+this.$qs.stringify(this.updateForm)).then(res=>{
+              //console.log(res.data.data);
+              alert(res.data.message);
+              this.updatePropertyForm=false;
+              this.queryPropertyTable();
+            }).catch(re=>{
+              console.log(re);
+            })
+          }
+        })
+      },
 
-      /*处理新增弹框的下拉框*/
-      toSavePropertyForm:function(){
-        this.savePropertyForm=true;
+      /*查询第一个下拉框数据*/
+      querySelectOne:function(){
         this.$ajax.get("http://localhost:8080/api/type/selectTypeBypid?pid="+this.pid).then(res=>{
           //console.log(res.data.data);
           this.shopType1=res.data.data;
         }).catch(re=>{
           console.log(re);
         })
+      },
+
+      /*处理新增弹框的下拉框*/
+      toSavePropertyForm:function(){
+        this.savePropertyForm=true;
+        this.querySelectOne();
       },
       /*提交新增*/
       savePropertyData:function(PropertyForm){
@@ -199,9 +307,9 @@
       /*初始化数据*/
       isdelData:function (row,column,value,index) {
         if(value==0){
-          return "否";
+          return "不删";
         }else {
-          return "是";
+          return "删除";
         }
       },
       /*分页*/
@@ -218,6 +326,7 @@
     },watch:{
       /*处理新增弹框的第二个下拉框*/
       shopTypeId:function () {
+        //console.log(this.shopTypeId)
         this.pid=this.shopTypeId;
         this.$ajax.get("http://localhost:8080/api/type/selectTypeBypid?pid="+this.pid).then(res=>{
           //console.log(res.data.data);
