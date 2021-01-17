@@ -178,6 +178,13 @@
           label="是否删除"
           :formatter="isdelValData">
         </el-table-column>
+        <el-table-column
+          prop="id"
+          label="操作">
+          <template slot-scope="scope">
+            <el-button type="primary" size="mini" @click="toUpdateProValForm(scope.row)">修改</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <!--分页-->
       <el-pagination
@@ -207,7 +214,27 @@
       </div>
     </el-dialog>
 
-
+    <!--属性表修改模板-->
+    <el-dialog title="新增属性" :visible.sync="updateProValForm">
+      <el-form ref="upproValForm" :model="upproValForm" :rules="rules" label-width="80px" style="width: 500px;">
+        <el-form-item label="属性值" prop="name">
+          <el-input v-model="upproValForm.name"></el-input>
+        </el-form-item>
+        <el-form-item label="中文名称" prop="nameCH">
+          <el-input v-model="upproValForm.nameCH"></el-input>
+        </el-form-item>
+        <el-form-item label="是否删除" prop="isDel">
+          <el-radio-group v-model="upproValForm.isDel">
+            <el-radio :label="0">不删</el-radio>
+            <el-radio :label="1">删除</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="updateProValForm = false">取 消</el-button>
+        <el-button type="primary" @click="updateProValData('upproValForm')">确 定</el-button>
+      </div>
+    </el-dialog>
 
 
 
@@ -273,10 +300,20 @@
         craname:"",
         /*新增*/
         saveProValForm:false,
+        updateProValForm:false,
+        /*新增*/
         proValForm:{
           name:"",
           nameCH:"",
           proid:0,
+        },
+        /*修改*/
+        upproValForm:{
+          id:"",
+          name:"",
+          nameCH:"",
+          isDel:"",
+          proid:"",
         }
 
       }
@@ -284,24 +321,50 @@
         this.queryPropertyTable();
     },methods:{
       //属性值表部分
+      /*开启属性值表修改弹框*/
+      toUpdateProValForm:function(row){
+        this.updateProValForm=true;
+        this.$ajax.get("http://localhost:8080/api/val/selectProValByid?id="+row.id).then(res=>{
+          //console.log(res.data.data);
+          this.upproValForm=res.data.data;
+        }).catch(re=>{
+          console.log(re)
+        })
+      },
+      /*修改提交*/
+      updateProValData:function(upproValForm){
+        this.$refs[upproValForm].validate((flog) => {
+          if(flog==true){
+            this.$ajax.post("http://localhost:8080/api/val/updateProVal?"+this.$qs.stringify(this.upproValForm)).then(res=>{
+              alert(res.data.message);
+              this.updateProValForm=false;
+              this.queryProValData();
+            }).catch(re=>{
+              console.log(re);
+            })
+          }
+        })
+      },
       /*开启属性值表新增弹框*/
       toSaveProValForm:function(){
         this.saveProValForm=true;
       },
       /*提交新增*/
-      saveProValData:function(){
-        console.log(this.proValForm)
-        this.$ajax.post("http://localhost:8080/api/val/saveProVal?"+this.$qs.stringify(this.proValForm)).then(res=>{
-          //console.log(res.data);
-          alert(res.data.message);
-          this.saveProValForm=false;
-          this.queryProValData();
-        }).catch(re=>{
-          console.log(re);
+      saveProValData:function(proValForm){
+        //console.log(this.proValForm)
+        this.$refs[proValForm].validate((flog) => {
+          if(flog==true){
+            this.$ajax.post("http://localhost:8080/api/val/saveProVal?"+this.$qs.stringify(this.proValForm)).then(res=>{
+              //console.log(res.data);
+              alert(res.data.message);
+              this.saveProValForm=false;
+              this.queryProValData();
+            }).catch(re=>{
+              console.log(re);
+            })
+          }
         })
       },
-
-
       /*属性表展示弹框*/
       toProValTable:function(row){
         this.proValTable=true;
@@ -338,13 +401,6 @@
           return "删除";
         }
       },
-
-
-
-
-
-
-
 
 
 
