@@ -4,7 +4,7 @@
     <!--条件查询-->
     <el-input v-model="cratename" placeholder="请输入名称" style="width: 200px"></el-input>
     <el-button type="primary" size="small" icon="el-icon-search" @click="queryShopTable">搜索</el-button>
-    <el-button type="primary" size="small" icon="el-icon-circle-plus-outline" @click="saveShopDataForm=true">新增</el-button>
+    <el-button type="primary" size="small" icon="el-icon-circle-plus-outline" @click="toSaveShopDataForm">新增</el-button>
 
     <!--数据展示-->
     <el-table
@@ -27,7 +27,7 @@
         prop="imgpath"
         label="图片">
         <template slot-scope="scope">
-          <img width="50px" :src="'http://'+scope.row.imgpath"/>
+          <img width="50px" :src="scope.row.imgpath"/>
         </template>
       </el-table-column>
       <el-table-column
@@ -90,12 +90,13 @@
         </el-form-item>
         <el-form-item label="图片">
           <el-upload
-            class="upload-demo"
+            class="avatar-uploader"
             action="http://localhost:8080/api/shopdata/saveFile"
-            :on-success="imgSaveFile"
-            name="file"
-            list-type="picture">
-            <el-button size="small" type="primary" icon="el-icon-picture">点击上传</el-button>
+            :show-file-list="false"
+            :on-success="imgsaveFile"
+            :before-upload="beforeAvatarUpload">
+            <img v-if="imageUrl" :src="imageUrl" class="avatar">
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-form-item>
         <el-form-item label="商品介绍" prop="bandDesc">
@@ -124,12 +125,13 @@
         </el-form-item>
         <el-form-item label="图片">
           <el-upload
-            class="upload-demo"
+            class="avatar-uploader"
             action="http://localhost:8080/api/shopdata/saveFile"
+            :show-file-list="false"
             :on-success="imgUpdateFile"
-            name="file"
-            list-type="picture">
-            <el-button size="small" type="primary" icon="el-icon-picture">点击上传</el-button>
+            :before-upload="beforeAvatarUpload">
+            <img v-if="imageUrl" :src="imageUrl" class="avatar">
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-form-item>
         <el-form-item label="商品介绍" prop="bandDesc">
@@ -157,14 +159,19 @@
     name: "ShopData",
     data() {
       return {
+        /*分页和条件查询*/
         shopTable: [],
         page:1,
         limit:3,
         limits:[3,5,8,10],
         count:0,
         cratename:"",
+        /*弹框*/
         saveShopDataForm:false,
         updateShopDataForm:false,
+        /*图片*/
+        imageUrl:"",
+        /*新增*/
         saveForm:{
           name:"",
           bandE:"",
@@ -172,6 +179,7 @@
           bandDesc:"",
           ord:""
         },
+        /*修改*/
         updateForm:{
           id:"",
           name:"",
@@ -220,12 +228,25 @@
         })
       },
       /*修改图片上传*/
-      imgUpdateFile:function(response, file, fileList){
+      imgUpdateFile:function(response,file){
         //console.log(response.data);
-        this.updateForm.imgpath=response.data;
         //console.log(file);
+        this.updateForm.imgpath=response.data;
+        this.imageUrl=response.data;
       },
-      /*新增*/
+      /*新增弹框*/
+      toSaveShopDataForm:function(){
+        this.saveShopDataForm=true;
+        this.imageUrl="";
+        this.saveForm={
+          name:"",
+          bandE:"",
+          imgpath:"",
+          bandDesc:"",
+          ord:""
+        }
+      },
+      /*新增弹框提交*/
       saveShopData:function(saveForm){
         this.$refs[saveForm].validate((flog) => {
           if (flog==true) {
@@ -243,9 +264,10 @@
         })
       },
       /*新增图片上传*/
-      imgSaveFile:function(response, file, fileList){
+      imgsaveFile:function(response,file){
         //console.log(response.data);
         this.saveForm.imgpath=response.data;
+        this.imageUrl=response.data;
       },
       /*查询数据*/
       queryShopTable:function(){
@@ -267,6 +289,19 @@
         this.page=val;
         this.queryShopTable();
       },
+      /*限制文件上传的类型和大小*/
+      beforeAvatarUpload(file) {
+        //限制类型    name  来限制
+        const isJPG = file.type === 'image/jpeg';
+        const isLt2M = file.size / 1024 / 1024 < 10;
+        if (!isJPG) {
+          this.$message.error('上传头像图片只能是 JPG 格式!');
+        }
+        if (!isLt2M) {
+          this.$message.error('上传头像图片大小不能超过 2MB!');
+        }
+        return isJPG && isLt2M;
+      },
       isdelData:function (row,column,value,index) {
         if(value==0){
           return "否";
@@ -279,5 +314,27 @@
 </script>
 
 <style scoped>
-
+  .avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    line-height: 178px;
+    text-align: center;
+  }
+  .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+  }
 </style>
