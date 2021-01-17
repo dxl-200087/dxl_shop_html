@@ -207,6 +207,7 @@
         this.updateShopDataForm=true;
         this.$ajax.get("http://localhost:8080/api/shopdata/selectShopByid?id="+row.id).then(res=>{
           this.updateForm=res.data.data;
+          this.imageUrl=this.updateForm.imgpath;
         }).catch(re=>{
           console.log(re);
         })

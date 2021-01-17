@@ -38,22 +38,11 @@
         :formatter="isdelData">
       </el-table-column>
       <el-table-column
-        prop="createDate"
-        label="创建时间">
-      </el-table-column>
-      <el-table-column
-        prop="updateDate"
-        label="修改时间">
-      </el-table-column>
-      <el-table-column
-        prop="author"
-        label="修改人">
-      </el-table-column>
-      <el-table-column
         prop="id"
         label="操作">
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="toUpdatePropertyForm(scope.row)">修改</el-button>
+          <el-button type="primary" size="mini" @click="toProValTable(scope.row)">赋值</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -70,7 +59,7 @@
 
 
     <!--新增模板-->
-    <el-dialog title="新增商品" :visible.sync="savePropertyForm">
+    <el-dialog title="新增属性" :visible.sync="savePropertyForm">
       <el-form ref="PropertyForm" :model="PropertyForm" :rules="rules" label-width="80px" style="width: 500px;">
         <el-form-item label="属性名称" prop="name">
           <el-input v-model="PropertyForm.name"></el-input>
@@ -79,22 +68,13 @@
           <el-input v-model="PropertyForm.nameCH"></el-input>
         </el-form-item>
         <el-form-item label="对应分类" prop="typeId">
-          <el-select v-model="shopTypeId" placeholder="请选择" clearable>
+          <el-select v-model="PropertyForm.typeId" placeholder="请选择" clearable>
             <el-option
-              v-for="data in shopType1"
+              v-for="data in shopType"
               :key="data.id"
               :label="data.name"
               :value="data.id">
               <span style="float: left">{{ data.name }}</span>
-            </el-option>
-          </el-select>
-          <el-select v-model="PropertyForm.typeId" placeholder="请选择" clearable>
-            <el-option
-              v-for="data2 in shopType2"
-              :key="data2.id"
-              :label="data2.name"
-              :value="data2.id">
-              <span style="float: left">{{ data2.name }}</span>
             </el-option>
           </el-select>
         </el-form-item>
@@ -121,7 +101,7 @@
 
 
     <!--修改模板-->
-    <el-dialog title="新增商品" :visible.sync="updatePropertyForm">
+    <el-dialog title="修改属性" :visible.sync="updatePropertyForm">
       <el-form ref="updateForm" :model="updateForm" :rules="rules" label-width="80px" style="width: 500px;">
         <el-form-item label="属性名称" prop="name">
           <el-input v-model="updateForm.name"></el-input>
@@ -130,22 +110,13 @@
           <el-input v-model="updateForm.nameCH"></el-input>
         </el-form-item>
         <el-form-item label="对应分类" prop="typeId">
-          <el-select v-model="shopTypeId" placeholder="请选择" clearable>
+          <el-select v-model="updateForm.typeId" placeholder="请选择" clearable>
             <el-option
-              v-for="data in shopType1"
+              v-for="data in shopType"
               :key="data.id"
               :label="data.name"
               :value="data.id">
               <span style="float: left">{{ data.name }}</span>
-            </el-option>
-          </el-select>
-          <el-select v-model="updateForm.typeId" placeholder="请选择" clearable>
-            <el-option
-              v-for="data2 in shopType2"
-              :key="data2.id"
-              :label="data2.name"
-              :value="data2.id">
-              <span style="float: left">{{ data2.name }}</span>
             </el-option>
           </el-select>
         </el-form-item>
@@ -177,6 +148,46 @@
     </el-dialog>
 
 
+
+    <el-dialog title="属性值表" :visible.sync="proValTable">
+      <el-table
+        :data="ProValueTable"
+        stripe
+        style="width: 100%">
+        <el-table-column
+          prop="id"
+          label="序号">
+        </el-table-column>
+        <el-table-column
+          prop="name"
+          label="属性值">
+        </el-table-column>
+        <el-table-column
+          prop="nameCH"
+          label="中文名称">
+        </el-table-column>
+        <el-table-column
+          prop="proid"
+          label="对应属性">
+        </el-table-column>
+        <el-table-column
+          prop="isDel"
+          label="是否删除"
+          :formatter="isdelValData">
+        </el-table-column>
+      </el-table>
+      <!--分页-->
+      <el-pagination
+        @size-change="valSizeChange"
+        @current-change="valCurrentChange"
+        :current-page="valpage"
+        :page-sizes="vallimits"
+        :page-size="vallimit"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="valcount">
+      </el-pagination>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -185,17 +196,23 @@
     name: "ShopProperty",
     data() {
       return {
+        /*属性表参数*/
         PropertyTable:[],
         page:1,
         limit:3,
         limits:[3,5,8,10],
         count:0,
+        /*新增和修改的弹框*/
         savePropertyForm:false,
         updatePropertyForm:false,
-        pid:1,
-        shopType1:[],
-        shopType2:[],
-        shopTypeId:"",
+        /*分类表所有数据*/
+        shopTypeData:[],
+        /*处理下拉框*/
+        shopType:[],
+        td1:"",
+        td2:"",
+        strData:'',
+        /*新增数据*/
         PropertyForm:{
           name:"",
           nameCH:"",
@@ -203,6 +220,7 @@
           type:"",
           isSKU:""
         },
+        /*修改数据*/
         updateForm:{
           id:"",
           name:"",
@@ -212,6 +230,7 @@
           isSKU:"",
           isDel:""
         },
+        /*校验*/
         rules:{
           name:[{ required: true, message: '请输入属性名称', trigger: 'change' }],
           nameCH:[{ required: true, message: '请输入中文属性', trigger: 'change' }],
@@ -219,13 +238,72 @@
           type:[{ required: true, message: '请选择文本类型', trigger: 'change' }],
           isSKU:[{ required: true, message: '请选择是否SKU', trigger: 'change' }],
           isDel:[{ required: true, message: '请选择是否删除', trigger: 'change' }],
-        }
+        },
+        /*-------属性值表-------*/
+        proValTable:false,
+        ProValueTable:[],
+        valpage:1,
+        vallimit:3,
+        vallimits:[3,5,8,10],
+        valcount:0,
+        proid:0
+
       }
     },created:function () {
         this.queryPropertyTable();
     },methods:{
+      //属性值表部分
+      /*属性表弹框*/
+      toProValTable:function(row){
+        this.proValTable=true;
+        this.proid=row.id;
+        this.queryProValData();
+      },
+      /*查询属性对应的属性值*/
+      queryProValData:function(proid){
+        this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?page="+this.valpage+"&limit="+this.vallimit+"&proid="+this.proid).then(res=>{
+          console.log(res.data.data)
+          this.ProValueTable=res.data.data.data;
+          this.valcount=res.data.data.count;
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+      /*属性值表分页*/
+      valSizeChange(val) {
+        //console.log(`每页 ${val} 条`);
+        this.vallimit=val;
+        this.queryProValData();
+      },
+      valCurrentChange(val) {
+        //console.log(`当前页: ${val}`);
+        this.valpage=val;
+        this.queryProValData();
+      },
+      /*初始化数据*/
+      isdelValData:function(){
+        if(value==0){
+          return "不删";
+        }else {
+          return "删除";
+        }
+      },
+
+
+
+
+
+
+
+
+
+
+
+
+      //属性表方法-----------------
       /*修改弹框的处理*/
       toUpdatePropertyForm:function(row){
+        this.shopType=[];
         this.updatePropertyForm=true;
         this.querySelectOne();
         this.$ajax.get("http://localhost:8080/api/property/selectPropertyByid?id="+row.id).then(res=>{
@@ -236,22 +314,9 @@
           console.log(re);
         })
       },
-
-      /*根据typeId查询回显对应分类的单条数据*/
-      queryTypeByidData:function(id){
-        //console.log(this.updateForm)
-        this.$ajax.get("http://localhost:8080/api/type/selectTypeByid?id="+id).then(res=>{
-          //console.log(res.data.data)
-          this.shopTypeId=res.data.data.pid;
-          //console.log(this.shopTypeId)
-        }).catch(re=>{
-          console.log(re);
-        })
-      },
-
       /*修改提交*/
       updatePropertyData:function(updateForm){
-        console.log(this.updateForm)
+        //console.log(this.updateForm)
         this.$refs[updateForm].validate((flog) => {
           if(flog==true){
             this.$ajax.post("http://localhost:8080/api/property/updateProperty?"+this.$qs.stringify(this.updateForm)).then(res=>{
@@ -265,19 +330,65 @@
           }
         })
       },
-
-      /*查询第一个下拉框数据*/
+      /*查询所有分类的数据 处理下拉框*/
       querySelectOne:function(){
-        this.$ajax.get("http://localhost:8080/api/type/selectTypeBypid?pid="+this.pid).then(res=>{
+        this.$ajax.get("http://localhost:8080/api/type/selectType").then(res=>{
           //console.log(res.data.data);
-          this.shopType1=res.data.data;
+          this.shopTypeData=res.data.data;
+          for (let i = 0; i <this.shopTypeData.length ; i++) {
+            if(this.shopTypeData[i].pid==0){
+              this.querySelectTwo(this.shopTypeData[i]);
+              break;
+            }
+          }
+          this.strData=this.strData.substr(0,this.strData.length-1);
+          var arr=this.strData.split(";");
+          for (let i = 0; i <arr.length ; i++) {
+            //console.log(arr[i])
+            this.shopType.push(JSON.parse(arr[i]))
+          }
         }).catch(re=>{
           console.log(re);
         })
       },
-
-      /*处理新增弹框的下拉框*/
+      /*递归*/
+      querySelectTwo:function(data){
+        var flog=this.isParent(data);
+        if(flog==true){
+          if(data.pid==0){
+            this.td1=data.name+"/";
+          }
+          if(data.pid==1){
+            this.td2=data.name+"/";
+          }
+          for (let i = 0; i <this.shopTypeData.length ; i++) {
+            if(data.id==this.shopTypeData[i].pid){
+              this.querySelectTwo(this.shopTypeData[i]);
+            }
+          }
+        }else {
+          this.strData+='{"id":'+data.id+',"name":"'+this.td1+this.td2+data.name+'"}'+";";
+        }
+      },
+      /*判断是否是父节点*/
+      isParent:function(data){
+        for (let i = 0; i <this.shopTypeData.length ; i++) {
+          if(data.id==this.shopTypeData[i].pid){
+            return true;
+          }
+        }
+        return false;
+      },
+      /*开启新增弹框*/
       toSavePropertyForm:function(){
+        this.PropertyForm={
+            name:"",
+            nameCH:"",
+            typeId:"",
+            type:"",
+            isSKU:""
+        }
+        this.shopType=[];
         this.savePropertyForm=true;
         this.querySelectOne();
       },
@@ -296,6 +407,7 @@
           }
         })
       },
+
       /*查询展示属性数据*/
       queryPropertyTable:function(){
         this.$ajax.get("http://localhost:8080/api/property/selectProperty?page="+this.page+"&limit="+this.limit).then(res=>{
@@ -342,20 +454,6 @@
         //console.log(`当前页: ${val}`);
         this.page=val;
         this.queryPropertyTable();
-      }
-    },watch:{
-      /*处理新增弹框的第二个下拉框*/
-      shopTypeId:function () {
-        //console.log(this.shopTypeId)
-        this.PropertyForm.typeId="";
-
-        this.pid=this.shopTypeId;
-        this.$ajax.get("http://localhost:8080/api/type/selectTypeBypid?pid="+this.pid).then(res=>{
-          //console.log(res.data.data);
-          this.shopType2=res.data.data;
-        }).catch(re=>{
-          console.log(re);
-        })
       }
     }
   }
