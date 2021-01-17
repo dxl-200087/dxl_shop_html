@@ -148,8 +148,11 @@
     </el-dialog>
 
 
-
+    <!--------------------属性值表展示弹框------------------>
     <el-dialog title="属性值表" :visible.sync="proValTable">
+      <el-input v-model="craname" placeholder="请输入名称" style="width: 200px"></el-input>
+      <el-button type="primary" size="small" icon="el-icon-search" @click="queryProValData">搜索</el-button>
+      <el-button type="primary" size="small" icon="el-icon-circle-plus-outline" @click="toSaveProValForm">新增</el-button>
       <el-table
         :data="ProValueTable"
         stripe
@@ -187,6 +190,26 @@
         :total="valcount">
       </el-pagination>
     </el-dialog>
+
+    <!--属性表新增模板-->
+    <el-dialog title="新增属性" :visible.sync="saveProValForm">
+      <el-form ref="proValForm" :model="proValForm" :rules="rules" label-width="80px" style="width: 500px;">
+        <el-form-item label="属性值" prop="name">
+          <el-input v-model="proValForm.name"></el-input>
+        </el-form-item>
+        <el-form-item label="中文名称" prop="nameCH">
+          <el-input v-model="proValForm.nameCH"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="saveProValForm = false">取 消</el-button>
+        <el-button type="primary" @click="saveProValData('proValForm')">确 定</el-button>
+      </div>
+    </el-dialog>
+
+
+
+
 
   </div>
 </template>
@@ -242,27 +265,54 @@
         /*-------属性值表-------*/
         proValTable:false,
         ProValueTable:[],
+        /*分页条件查询*/
         valpage:1,
         vallimit:3,
         vallimits:[3,5,8,10],
         valcount:0,
-        proid:0
+        craname:"",
+        /*新增*/
+        saveProValForm:false,
+        proValForm:{
+          name:"",
+          nameCH:"",
+          proid:0,
+        }
 
       }
     },created:function () {
         this.queryPropertyTable();
     },methods:{
       //属性值表部分
-      /*属性表弹框*/
+      /*开启属性值表新增弹框*/
+      toSaveProValForm:function(){
+        this.saveProValForm=true;
+      },
+      /*提交新增*/
+      saveProValData:function(){
+        console.log(this.proValForm)
+        this.$ajax.post("http://localhost:8080/api/val/saveProVal?"+this.$qs.stringify(this.proValForm)).then(res=>{
+          //console.log(res.data);
+          alert(res.data.message);
+          this.saveProValForm=false;
+          this.queryProValData();
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+
+
+      /*属性表展示弹框*/
       toProValTable:function(row){
         this.proValTable=true;
-        this.proid=row.id;
+        this.proValForm.proid=row.id;
+        this.craname="";
         this.queryProValData();
       },
       /*查询属性对应的属性值*/
       queryProValData:function(proid){
-        this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?page="+this.valpage+"&limit="+this.vallimit+"&proid="+this.proid).then(res=>{
-          console.log(res.data.data)
+        this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?page="+this.valpage+"&limit="+this.vallimit+"&proid="+this.proValForm.proid+"&craname="+this.craname).then(res=>{
+          //console.log(res.data.data);
           this.ProValueTable=res.data.data.data;
           this.valcount=res.data.data.count;
         }).catch(re=>{
@@ -281,7 +331,7 @@
         this.queryProValData();
       },
       /*初始化数据*/
-      isdelValData:function(){
+      isdelValData:function(row,column,value,index){
         if(value==0){
           return "不删";
         }else {
