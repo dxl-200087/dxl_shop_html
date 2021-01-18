@@ -1,5 +1,7 @@
 <template>
   <div>
+    <el-input v-model="cratename" placeholder="请输入名称" style="width: 200px"></el-input>
+    <el-button type="primary" size="small" icon="el-icon-search" @click="queryPropertyTable">搜索</el-button>
     <el-button type="primary" size="small" icon="el-icon-circle-plus-outline" @click="toSavePropertyForm">新增</el-button>
     <!--数据展示-->
     <el-table
@@ -42,7 +44,7 @@
         label="操作">
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="toUpdatePropertyForm(scope.row)">修改</el-button>
-          <el-button type="primary" size="mini" @click="toProValTable(scope.row)">赋值</el-button>
+          <el-button v-if="scope.row.type!=3" type="primary" size="mini" @click="toProValTable(scope.row)">赋值</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -246,7 +248,8 @@
     name: "ShopProperty",
     data() {
       return {
-        /*属性表参数*/
+        /*属性表分页展示参数*/
+        cratename:"",
         PropertyTable:[],
         page:1,
         limit:3,
@@ -259,9 +262,7 @@
         shopTypeData:[],
         /*处理下拉框*/
         shopType:[],
-        td1:"",
-        td2:"",
-        strData:'',
+        shopTypeName:"",
         /*新增数据*/
         PropertyForm:{
           name:"",
@@ -289,9 +290,10 @@
           isSKU:[{ required: true, message: '请选择是否SKU', trigger: 'change' }],
           isDel:[{ required: true, message: '请选择是否删除', trigger: 'change' }],
         },
-        /*-------属性值表-------*/
+        /*------------属性值表------------*/
         proValTable:false,
         ProValueTable:[],
+        proidData:"",
         /*分页条件查询*/
         valpage:1,
         vallimit:3,
@@ -320,6 +322,7 @@
     },created:function () {
         this.queryPropertyTable();
     },methods:{
+
       //属性值表部分
       /*开启属性值表修改弹框*/
       toUpdateProValForm:function(row){
@@ -345,13 +348,19 @@
           }
         })
       },
-      /*开启属性值表新增弹框*/
+      /*开启属性值表的新增弹框*/
       toSaveProValForm:function(){
         this.saveProValForm=true;
+        this.proValForm={
+          name:"",
+          nameCH:"",
+          proid:0,
+        }
       },
-      /*提交新增*/
+      /*提交属性值表的新增*/
       saveProValData:function(proValForm){
         //console.log(this.proValForm)
+        this.proValForm.proid=this.proidData;
         this.$refs[proValForm].validate((flog) => {
           if(flog==true){
             this.$ajax.post("http://localhost:8080/api/val/saveProVal?"+this.$qs.stringify(this.proValForm)).then(res=>{
@@ -365,16 +374,16 @@
           }
         })
       },
-      /*属性表展示弹框*/
+      /*属性值表展示弹框*/
       toProValTable:function(row){
         this.proValTable=true;
-        this.proValForm.proid=row.id;
+        this.proidData=row.id;
         this.craname="";
         this.queryProValData();
       },
       /*查询属性对应的属性值*/
       queryProValData:function(proid){
-        this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?page="+this.valpage+"&limit="+this.vallimit+"&proid="+this.proValForm.proid+"&craname="+this.craname).then(res=>{
+        this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?page="+this.valpage+"&limit="+this.vallimit+"&proid="+this.proidData+"&craname="+this.craname).then(res=>{
           //console.log(res.data.data);
           this.ProValueTable=res.data.data.data;
           this.valcount=res.data.data.count;
@@ -404,18 +413,15 @@
 
 
 
-
-
-      //属性表方法-----------------
+      //-------------------属性表方法-----------------
       /*修改弹框的处理*/
       toUpdatePropertyForm:function(row){
         this.shopType=[];
         this.updatePropertyForm=true;
-        this.querySelectOne();
         this.$ajax.get("http://localhost:8080/api/property/selectPropertyByid?id="+row.id).then(res=>{
           //console.log(res.data.data)
+          this.querySelectOne();
           this.updateForm=res.data.data;
-          this.queryTypeByidData(this.updateForm.typeId);
         }).catch(re=>{
           console.log(re);
         })
@@ -436,54 +442,54 @@
           }
         })
       },
-      /*查询所有分类的数据 处理下拉框*/
+      /*查询所有分类的数据 处理拼接下拉框*/
       querySelectOne:function(){
         this.$ajax.get("http://localhost:8080/api/type/selectType").then(res=>{
           //console.log(res.data.data);
           this.shopTypeData=res.data.data;
-          for (let i = 0; i <this.shopTypeData.length ; i++) {
-            if(this.shopTypeData[i].pid==0){
-              this.querySelectTwo(this.shopTypeData[i]);
-              break;
-            }
-          }
-          this.strData=this.strData.substr(0,this.strData.length-1);
-          var arr=this.strData.split(";");
-          for (let i = 0; i <arr.length ; i++) {
-            //console.log(arr[i])
-            this.shopType.push(JSON.parse(arr[i]))
+          this.querySelectTwo();
+          for (let i = 0; i <this.shopType.length ; i++) {
+            this.shopTypeName="";
+            this.isParent(this.shopType[i]);
+            //console.log(this.shopTypeName);
+            this.shopType[i].name=this.shopTypeName.split("/").reverse().join("/").substr(0,this.shopTypeName.length-1)
           }
         }).catch(re=>{
           console.log(re);
         })
       },
-      /*递归*/
-      querySelectTwo:function(data){
-        var flog=this.isParent(data);
-        if(flog==true){
-          if(data.pid==0){
-            this.td1=data.name+"/";
-          }
-          if(data.pid==1){
-            this.td2=data.name+"/";
-          }
+      /*递归判断是否达到最顶层数据*/
+      isParent:function(data){
+        if(data.pid!=0){
+          this.shopTypeName+="/"+data.name;
           for (let i = 0; i <this.shopTypeData.length ; i++) {
-            if(data.id==this.shopTypeData[i].pid){
-              this.querySelectTwo(this.shopTypeData[i]);
+            if(data.pid==this.shopTypeData[i].id){
+              this.isParent(this.shopTypeData[i]);
+              break;
             }
           }
         }else {
-          this.strData+='{"id":'+data.id+',"name":"'+this.td1+this.td2+data.name+'"}'+";";
+          this.shopTypeName+="/"+data.name;
         }
       },
-      /*判断是否是父节点*/
-      isParent:function(data){
+      /*循环调用判断是否是底层数据的方法*/
+      querySelectTwo:function(){
+        for (let i = 0; i <this.shopTypeData.length ; i++) {
+          this.isLastData(this.shopTypeData[i]);
+        }
+      },
+      /*判断是否是底层数据*/
+      isLastData:function(data){
+        var flog=true;
         for (let i = 0; i <this.shopTypeData.length ; i++) {
           if(data.id==this.shopTypeData[i].pid){
-            return true;
+            flog=false;
+            return flog;
           }
         }
-        return false;
+        if(flog==true){
+          this.shopType.push(data);
+        }
       },
       /*开启新增弹框*/
       toSavePropertyForm:function(){
@@ -513,10 +519,9 @@
           }
         })
       },
-
       /*查询展示属性数据*/
       queryPropertyTable:function(){
-        this.$ajax.get("http://localhost:8080/api/property/selectProperty?page="+this.page+"&limit="+this.limit).then(res=>{
+        this.$ajax.get("http://localhost:8080/api/property/selectProperty?page="+this.page+"&limit="+this.limit+"&cratename="+this.cratename).then(res=>{
           //console.log(res.data.data.data);
           this.PropertyTable=res.data.data.data;
           this.count=res.data.data.count;

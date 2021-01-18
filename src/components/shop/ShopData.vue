@@ -44,14 +44,6 @@
         :formatter="isdelData">
       </el-table-column>
       <el-table-column
-        prop="createDate"
-        label="创建时间">
-      </el-table-column>
-      <el-table-column
-        prop="updateDate"
-        label="修改时间">
-      </el-table-column>
-      <el-table-column
         prop="author"
         label="修改人">
       </el-table-column>
