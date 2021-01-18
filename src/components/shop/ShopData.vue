@@ -130,7 +130,7 @@
             :show-file-list="false"
             :on-success="imgUpdateFile"
             :before-upload="beforeAvatarUpload">
-            <img v-if="imageUrl" :src="imageUrl" class="avatar">
+            <img v-if="imageupUrl" :src="imageupUrl" class="avatar">
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-form-item>
@@ -171,6 +171,7 @@
         updateShopDataForm:false,
         /*图片*/
         imageUrl:"",
+        imageupUrl:"",
         /*新增*/
         saveForm:{
           name:"",
@@ -207,7 +208,7 @@
         this.updateShopDataForm=true;
         this.$ajax.get("http://localhost:8080/api/shopdata/selectShopByid?id="+row.id).then(res=>{
           this.updateForm=res.data.data;
-          this.imageUrl=this.updateForm.imgpath;
+          this.imageupUrl=this.updateForm.imgpath;
         }).catch(re=>{
           console.log(re);
         })
@@ -233,7 +234,7 @@
         //console.log(response.data);
         //console.log(file);
         this.updateForm.imgpath=response.data;
-        this.imageUrl=response.data;
+        this.imageupUrl=response.data;
       },
       /*新增弹框*/
       toSaveShopDataForm:function(){
