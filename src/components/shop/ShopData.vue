@@ -44,10 +44,6 @@
         :formatter="isdelData">
       </el-table-column>
       <el-table-column
-        prop="author"
-        label="修改人">
-      </el-table-column>
-      <el-table-column
         prop="id"
         label="操作">
         <template slot-scope="scope">

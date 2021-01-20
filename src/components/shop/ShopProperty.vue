@@ -252,8 +252,8 @@
         cratename:"",
         PropertyTable:[],
         page:1,
-        limit:3,
-        limits:[3,5,8,10],
+        limit:5,
+        limits:[5,8,10],
         count:0,
         /*新增和修改的弹框*/
         savePropertyForm:false,
@@ -283,8 +283,8 @@
         },
         /*校验*/
         rules:{
-          name:[{ required: true, message: '请输入属性名称', trigger: 'change' }],
-          nameCH:[{ required: true, message: '请输入中文属性', trigger: 'change' }],
+          name:[{ required: true, message: '请输入属性名称', trigger: 'blur' }],
+          nameCH:[{ required: true, message: '请输入中文属性', trigger: 'blur' }],
           typeId:[{ required: true, message: '请选择对应分类', trigger: 'change' }],
           type:[{ required: true, message: '请选择文本类型', trigger: 'change' }],
           isSKU:[{ required: true, message: '请选择是否SKU', trigger: 'change' }],
@@ -296,8 +296,8 @@
         proidData:"",
         /*分页条件查询*/
         valpage:1,
-        vallimit:3,
-        vallimits:[3,5,8,10],
+        vallimit:5,
+        vallimits:[5,8,10],
         valcount:0,
         craname:"",
         /*新增*/

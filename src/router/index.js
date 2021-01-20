@@ -25,11 +25,15 @@ export default new Router({
         },{
           path: '/ShopData',
           component: () => import(/* webpackChunkName: "dashboard" */ '../components/shop/ShopData.vue'),
-          meta: { title: '商品管理' }
+          meta: { title: '品牌管理' }
         },{
           path: '/ShopProperty',
           component: () => import(/* webpackChunkName: "dashboard" */ '../components/shop/ShopProperty.vue'),
           meta: { title: '属性管理' }
+        },{
+          path: '/Commodity',
+          component: () => import(/* webpackChunkName: "dashboard" */ '../components/shop/Commodity.vue'),
+          meta: { title: '商品注册' }
         },
       ]
     },
