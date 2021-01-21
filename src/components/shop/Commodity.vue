@@ -90,15 +90,23 @@
           </el-form-item>
         </el-form-item>
 
-        <!--SKU属性的表格-->
+        <!--动态的SKU属性的表格-->
         <el-table :data="tableData" stripe style="width: 100%" v-if="proTableShow">
+          <!--sku动态展示-->
+          <el-table-column v-for="td in cols" :key="td.id" :label="td.nameCH" :prop="td.name">
+          </el-table-column>
+          <!--价格和库存-->
           <el-table-column
-            prop="id"
-            label="属性序号">
+            label="属性价格">
+            <template slot-scope="scope">
+              <el-input type="text" v-model="scope.row.price"></el-input>
+            </template>
           </el-table-column>
           <el-table-column
-            prop="name"
-            label="属性名称">
+            label="属性库存">
+            <template slot-scope="scope">
+              <el-input type="text" v-model="scope.row.stocks"></el-input>
+            </template>
           </el-table-column>
         </el-table>
 
@@ -106,14 +114,10 @@
         <el-form-item v-if="noSkuData.length>0" label="商品规格">
           <el-form-item v-for="nosku in noSkuData" :key="nosku.id" :label="nosku.nameCH">
             <!--输入框-->
-            <el-input
-              v-if="nosku.type==3"
-              clearable
-              v-model="commProForm.noskuInput">
-            </el-input>
+            <el-input  v-if="nosku.type==3" v-model="nosku.skuCkVal"></el-input>
 
             <!--单选组-->
-            <el-radio-group v-if="nosku.type==1" v-model="commProForm.noskuRadio">
+            <el-radio-group v-if="nosku.type==1" v-model="nosku.skuCkVal">
               <el-radio
                 v-for="nsdata in nosku.values"
                 :label="nsdata.id"
@@ -123,7 +127,7 @@
             </el-radio-group>
 
             <!--复选组-->
-            <el-checkbox-group v-if="nosku.type==2" v-model="commProForm.noskuCheck">
+            <el-checkbox-group v-if="nosku.type==2" v-model="nosku.skuCkVal">
               <el-checkbox
                 v-for="nsdata in nosku.values"
                 :label="nsdata.nameCH"
@@ -133,7 +137,7 @@
             </el-checkbox-group>
 
             <!--下拉框-->
-            <el-select placeholder="请选择" v-if="nosku.type==0" v-model="commProForm.noskuSelect" clearable>
+            <el-select placeholder="请选择" v-if="nosku.type==0" v-model="nosku.skuCkVal" clearable>
               <el-option
                 v-for="nsdata in nosku.values"
                 :key="nsdata.id"
@@ -146,6 +150,7 @@
 
         <el-form-item>
           <el-button type="primary" style="margin-top: 12px;" @click="active--">上一步</el-button>
+          <el-button type="primary" style="margin-top: 12px;"  @click="addCommAndPro">提交信息</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -191,18 +196,15 @@
         typeDataName: "",
         /*表单值*/
         commProForm: {
-          typeId: "",
-          noskuInput: "",
-          noskuRadio: "",
-          noskuCheck: [],
-          noskuSelect: ""
+          typeId: ""
         },
         /*是SKU的属性数据和不是SKU的属性数据*/
         skuData: [],
         noSkuData: [],
         /*属性表格数据和展示*/
         proTableShow:false,
-        tableData:[{id:1,name:"a"},{id:2,name:"b"}]
+        cols:[],
+        tableData:[]
       }
     }, created: function () {
       this.queryTypeData();
@@ -245,10 +247,35 @@
           console.log(re);
         })
       },
-
-
-      /*----------步骤二中根据下拉框内容改变，查询对应的属性数据---------*/
+      /*-------------------步骤二------------------*/
+      /*新增提交*/
+      addCommAndPro:function(){
+        this.commodityForm.typeId=this.commProForm.typeId;
+        //普通属性
+        //console.log(this.commodityForm);
+        //sku属性
+        //console.log(this.tableData);
+        //不是sku属性
+        //console.log(this.noSkuData);
+        let arrStr=[];
+        for (let i = 0; i <this.noSkuData.length ; i++) {
+          let arrStrData={};
+          arrStrData[this.noSkuData[i].name]=this.noSkuData[i].skuCkVal;
+          arrStr.push(arrStrData);
+        }
+        this.commodityForm.noSKU=JSON.stringify(arrStr);
+        this.commodityForm.sku=JSON.stringify(this.tableData);
+        //console.log(this.commodityForm);
+        this.$ajax.post("http://localhost:8080/api/commodity/saveCommodity?"+this.$qs.stringify(this.commodityForm)).then(res=>{
+          console.log(res.data);
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+      /*根据下拉框内容改变，查询对应的属性数据*/
       getShopProData: function (typeId) {
+        this.tableData=[];
+        this.proTableShow=false;
         this.skuData = [];
         this.noSkuData = [];
         this.$ajax.get("http://localhost:8080/api/property/selectProByTypeId?typeId=" + typeId).then(res => {
@@ -257,7 +284,9 @@
           //处理skuData  和  noSkuData的数据
           for (let i = 0; i < shopPro.length; i++) {
             if (shopPro.length > 0) {
+              /*判断是否是SKU属性*/
               if (shopPro[i].isSKU == 0) {
+                /*判断是否是输入框*/
                 if (shopPro[i].type != 3) {
                   /*查询属性对应的属性值*/
                   let pram = {page: 1, limit: 10000, proid: shopPro[i].id}
@@ -280,11 +309,13 @@
                   this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
                     //console.log(res.data.data);
                     shopPro[i].values = res.data.data.data;
+                    shopPro[i].skuCkVal =[];
                     this.noSkuData.push(shopPro[i]);
                   }).catch(re => {
                     console.log(re);
                   })
                 } else {
+                  shopPro[i].skuCkVal ="";
                   this.noSkuData.push(shopPro[i]);
                 }
               }
@@ -294,65 +325,64 @@
             }
           }
           //console.log(this.skuData);
-          //console.log(this.noSkuData);
+          console.log(this.noSkuData);
         }).catch(re => {
           console.log(re);
         })
       },
-      discarts: function () {
-        //笛卡尔积
-        var twodDscartes = function (a, b) {
-          var ret = [];
-          for (var i = 0; i < a.length; i++) {
-            for (var j = 0; j < b.length; j++) {
-              ret.push(ft(a[i], b[j]));
-            }
-          }
-          return ret;
-        }
-        var ft = function (a, b) {
-          if (!(a instanceof Array)) a = [a];
-          var ret = a.slice(0);
-          ret.push(b);
-          return ret;
-        }
-        //多个一起做笛卡尔积
-        return (function (data) {
-          var len = data.length;
-          if (len == 0)
-            return [];
-          else if (len == 1)
-            return data[0];
-          else {
-            var r = data[0];
-            for (var i = 1; i < len; i++) {
-              r = twodDscartes(r, data[i]);
-            }
-            return r;
-          }
-        })(arguments.length > 1 ? arguments : arguments[0]);
+      /*笛卡尔积函数*/
+      calcDescartes:function(array) {
+        if (array.length < 2) return array[0] || [];
+        return [].reduce.call(array, function (col, set) {
+          var res = [];
+          col.forEach(function (c) {
+            set.forEach(function (s) {
+              var t = [].concat(Array.isArray(c) ? c : [c]);
+              t.push(s);
+              res.push(t);
+            })
+          });
+          return res;
+        });
       },
       /*SKU属性复选框的事件*/
       skuCheckData: function () {
-        //console.log(this.skuData);
+        this.cols=[];
+        this.tableData=[];
+        let arr=[];
         var flog=true;
         for (let i = 0; i <this.skuData.length ; i++) {
+          /*拼接动态表头*/
+          this.cols.push({id:this.skuData[i].id,nameCH:this.skuData[i].nameCH,name:this.skuData[i].name});
+          /*处理调用笛卡尔积的参数*/
+          arr.push(this.skuData[i].skuCkVal);
           if(this.skuData[i].skuCkVal.length==0){
             flog=false;
             break;
           }
         }
         if(flog==true){
-          //console.log(this.skuData);
-          let arr=[];
-          for (let i = 0; i <this.skuData.length; i++) {
-            arr.push(this.skuData[i].skuCkVal);
+          /*笛卡尔积返回的数据*/
+          let data=this.calcDescartes(arr);
+          /*循环处理动态表格的数据*/
+          for (let i = 0; i <data.length ; i++) {
+            let jsonData={};
+            if(typeof data[i]=="object"){
+              for (let j = 0; j <data[i].length ; j++) {
+                let key=this.cols[j].name;
+                jsonData[key]=data[i][j];
+              }
+            }else {
+              let key=this.cols[0].name;
+              jsonData[key]=data[i];
+            }
+            this.tableData.push(jsonData);
           }
-          this.tableData=this.discarts(arr);
-          console.log(this.tableData);
+          //console.log(this.tableData);
         }
         this.proTableShow=flog;
       },
+
       /*步骤二的商品类型下拉框处理*/
       queryTypeData: function () {
         this.$ajax.get("http://localhost:8080/api/type/selectType").then(res => {
