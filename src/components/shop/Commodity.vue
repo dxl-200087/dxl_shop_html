@@ -271,7 +271,8 @@
         this.commodityForm.sku=JSON.stringify(this.tableData);
         //console.log(this.commodityForm);
         this.$ajax.post("http://localhost:8080/api/commodity/saveCommodity?"+this.$qs.stringify(this.commodityForm)).then(res=>{
-          console.log(res.data.message);
+          //console.log(res.data.message);
+          alert(res.data.message);
         }).catch(re=>{
           console.log(re);
         })

@@ -61,6 +61,7 @@
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="toUpdateCommForm(scope.row)">修改</el-button>
           <el-button type="primary" size="mini" @click="toUpdateIsDel(scope.row)">删除</el-button>
+          <el-button type="primary" size="mini" @click="toUpdatePro(scope.row)">属性维护</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -75,7 +76,7 @@
     </el-pagination>
 
     <!--商品修改表单-->
-    <el-dialog title="修改属性" :visible.sync="updateCommFormFolg">
+    <el-dialog title="修改弹框" :visible.sync="updateCommFormFolg">
       <el-form ref="updateCommForm" :model="updateCommForm" label-width="80px" style="width: 500px;">
         <el-form-item label="商品名称" prop="name">
           <el-input v-model="updateCommForm.name" placeholder="请输入商品名称"></el-input>
@@ -125,12 +126,107 @@
     </el-dialog>
 
     <!--修改isDel-->
-    <el-dialog title="修改属性" :visible.sync="toUpdateIsDelFlog">
+    <el-dialog title="删除弹框" :visible.sync="toUpdateIsDelFlog">
       <el-radio-group v-model="isDel">
         <el-radio :label="0">不删</el-radio>
         <el-radio :label="1">删除</el-radio>
-      </el-radio-group><br/>
+      </el-radio-group>
+      <br/>
       <el-button type="primary" @click="updateIsDel">确定</el-button>
+    </el-dialog>
+
+
+    <!----------------属性维护的动态表单----------------->
+    <el-dialog title="属性维护" :visible.sync="toUpdateProFlog">
+      <el-form ref="commProForm" :model="commProForm" label-width="80px" style="width: 500px;">
+        <el-form-item label="商品类型">
+          <el-select v-model="commProForm.typeId" placeholder="请选择商品类型" clearable style="width: 420px"
+                     @change="getShopProData">
+            <el-option
+              v-for="data in typeData"
+              :key="data.id"
+              :label="data.name"
+              :value="data.id">
+              <span style="float: left">{{ data.name }}</span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+
+        <!--是SKU的属性-->
+        <el-form-item v-if="skuData.length>0" label="商品SKU">
+          <el-form-item v-for="sku in skuData" :key="sku.id" :label="sku.nameCH">
+            <!--复选组-->
+            <el-checkbox-group v-if="sku.type==2" v-model="sku.skuCkVal" @change="skuCheckData">
+              <el-checkbox
+                v-for="sdata in sku.values"
+                :label="sdata.nameCH"
+                :value="sdata.id"
+                :key="sdata.id">
+              </el-checkbox>
+            </el-checkbox-group>
+
+          </el-form-item>
+        </el-form-item>
+
+        <!--动态的SKU属性的表格-->
+        <el-table :data="tableData" stripe style="width: 100%" v-if="proTableShow">
+          <!--sku动态展示-->
+          <el-table-column v-for="td in cols" :key="td.id" :label="td.nameCH" :prop="td.name">
+          </el-table-column>
+          <!--价格和库存-->
+          <el-table-column
+            label="属性价格">
+            <template slot-scope="scope">
+              <el-input type="text" v-model="scope.row.price"></el-input>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="属性库存">
+            <template slot-scope="scope">
+              <el-input type="text" v-model="scope.row.stocks"></el-input>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!--不是SKU的属性-->
+        <el-form-item v-if="noSkuData.length>0" label="商品规格">
+          <el-form-item v-for="nosku in noSkuData" :key="nosku.id" :label="nosku.nameCH">
+            <!--输入框-->
+            <el-input  v-if="nosku.type==3" v-model="nosku.skuCkVal"></el-input>
+            <!--单选组-->
+            <el-radio-group v-if="nosku.type==1" v-model="nosku.skuCkVal">
+              <el-radio
+                v-for="nsdata in nosku.values"
+                :label="nsdata.id"
+                :key="nsdata.id">
+                {{nsdata.nameCH}}
+              </el-radio>
+            </el-radio-group>
+            <!--复选组-->
+            <el-checkbox-group v-if="nosku.type==2" v-model="nosku.skuCkVal">
+              <el-checkbox
+                v-for="nsdata in nosku.values"
+                :label="nsdata.nameCH"
+                :value="nsdata.id"
+                :key="nsdata.id">
+              </el-checkbox>
+            </el-checkbox-group>
+            <!--下拉框-->
+            <el-select placeholder="请选择" v-if="nosku.type==0" v-model="nosku.skuCkVal" clearable>
+              <el-option
+                v-for="nsdata in nosku.values"
+                :key="nsdata.id"
+                :label="nsdata.nameCH"
+                :value="nsdata.id">
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-form-item>
+
+        <el-form-item>
+
+        </el-form-item>
+      </el-form>
     </el-dialog>
 
 
@@ -166,14 +262,32 @@
           stocks: "",
           sortNum: "",
           imagepath: "",
-          isDel:""
+          isDel: ""
         },
         /*修改的图片路径*/
         imageUrl: "",
         /*修改isDel的属性*/
-        toUpdateIsDelFlog:false,
-        isDel:"",
-        delId:""
+        toUpdateIsDelFlog: false,
+        isDel: "",
+        delId: "",
+
+        /*属性维护*/
+        toUpdateProFlog: false,
+        /*类型下拉框处理*/
+        shopTypeData: [],
+        typeData: [],
+        typeDataName: "",
+        /*表单值*/
+        commProForm: {
+          typeId: ""
+        },
+        /*是SKU的属性数据和不是SKU的属性数据*/
+        skuData: [],
+        noSkuData: [],
+        /*属性表格数据和展示*/
+        proTableShow:false,
+        cols:[],
+        tableData:[]
 
       }
     }, created: function () {
@@ -181,8 +295,285 @@
       this.queryCommodtiy();
       /*查询品牌的数据*/
       this.queryBrandData();
+      /*处理下拉框*/
+      this.queryTypeData();
     }, methods: {
-      /*查询商品的展示数据*/
+      /*回显弹框*/
+      toUpdatePro:function(row){
+        /*开启属性维护的弹框*/
+        this.toUpdateProFlog=true;
+        /*赋值下拉框*/
+        this.commProForm.typeId=row.typeId;
+        /*回显*/
+        this.getShopProData2(row.typeId,row.id);
+
+      },
+      /*处理字符串数据*/
+      getProVslData:function(key,data){
+        var skuValData=[];
+        for (let i = 0; i <data.length ; i++) {
+          //得到一个数据 将字符串转为json
+          let  objData=JSON.parse(data[i].skuData);
+          /*得到库存*/
+          let  stocksData=JSON.parse(data[i].stocks);
+          if(objData[key]!=null){
+            /*判断stocks是否有值*/
+            if(stocksData!=null){
+              /*判断skuValData数组中是否有这条值*/
+              if(skuValData.indexOf(objData[key])==-1){
+                skuValData.push(objData[key]);
+              }
+            }else {
+              return objData[key];
+            }
+          }
+        }
+        return skuValData;
+      },
+
+      /*根据下拉框内容改变，查询对应的属性数据*/
+      getShopProData2: function (typeId,id) {
+        this.tableData=[];
+        this.proTableShow=false;
+        /*清空sku和不是sku的数据*/
+        this.skuData = [];
+        this.noSkuData = [];
+        this.$ajax.get("http://localhost:8080/api/commodity/selectProValDataByPid?proid="+id).then(res=>{
+          let pvData=res.data.data;
+          //console.log(pvData);
+          this.$ajax.get("http://localhost:8080/api/property/selectProByTypeId?typeId=" + typeId).then(res => {
+            //console.log(res.data.data);
+            let shopPro = res.data.data;
+            //处理skuData  和  noSkuData的数据
+            for (let i = 0; i < shopPro.length; i++) {
+              if (shopPro.length > 0) {
+                /*判断是否是SKU属性*/
+                if (shopPro[i].isSKU == 0) {
+                  /*判断是否是输入框*/
+                  if (shopPro[i].type != 3) {
+                    //数据回显
+                    if(shopPro[i].type==2){
+                      if(this.getProVslData(shopPro[i].name,pvData)==""){
+                        shopPro[i].skuCkVal=[];
+                      }else{
+                        shopPro[i].skuCkVal=this.getProVslData(shopPro[i].name,pvData);
+                      }
+                    }else{
+                      shopPro[i].skuCkVal=this.getProVslData(shopPro[i].name,pvData);
+                    }
+                    /*查询属性对应的属性值*/
+                    let pram = {page: 1, limit: 10000, proid: shopPro[i].id}
+                    this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
+                      //console.log(res.data.data);
+                      shopPro[i].values = res.data.data.data;
+                      this.skuData.push(shopPro[i]);
+                    }).catch(re => {
+                      console.log(re);
+                    })
+                  } else {
+                    shopPro[i].skuCkVal=this.getProVslData(shopPro[i].name,pvData);
+                    this.skuData.push(shopPro[i]);
+                  }
+                } else {
+                  if (shopPro[i].type != 3) {
+                    //数据回显
+                    if(shopPro[i].type==2){
+                      if(this.getProVslData(shopPro[i].name,pvData)==""){
+                        shopPro[i].skuCkVal=[];
+                      }else{
+                        shopPro[i].skuCkVal=this.getProVslData(shopPro[i].name,pvData);
+                      }
+                    }else{
+                      shopPro[i].skuCkVal=this.getProVslData(shopPro[i].name,pvData);
+                    }
+                    /*查询属性对应的属性值*/
+                    let pram = {page: 1, limit: 10000, proid: shopPro[i].id};
+                    this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
+                      //console.log(res.data.data);
+                      shopPro[i].values = res.data.data.data;
+                      this.noSkuData.push(shopPro[i]);
+                    }).catch(re => {
+                      console.log(re);
+                    })
+                  } else {
+                    shopPro[i].skuCkVal=this.getProVslData(shopPro[i].name,pvData);
+                    this.noSkuData.push(shopPro[i]);
+                  }
+                }
+              } else {
+                this.skuData = [];
+                this.noSkuData = [];
+              }
+            }
+            //console.log(this.skuData);
+            //console.log(this.noSkuData);
+          }).catch(re => {
+            console.log(re);
+          })
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+      getShopProData: function (typeId) {
+        this.tableData=[];
+        this.proTableShow=false;
+        this.skuData = [];
+        this.noSkuData = [];
+        this.$ajax.get("http://localhost:8080/api/property/selectProByTypeId?typeId=" + typeId).then(res => {
+          //console.log(res.data.data);
+          let shopPro = res.data.data;
+          //处理skuData  和  noSkuData的数据
+          for (let i = 0; i < shopPro.length; i++) {
+            if (shopPro.length > 0) {
+              /*判断是否是SKU属性*/
+              if (shopPro[i].isSKU == 0) {
+                /*判断是否是输入框*/
+                if (shopPro[i].type != 3) {
+                  /*查询属性对应的属性值*/
+                  let pram = {page: 1, limit: 10000, proid: shopPro[i].id}
+                  this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
+                    //console.log(res.data.data);
+                    shopPro[i].values = res.data.data.data;
+                    shopPro[i].skuCkVal = [];
+                    this.skuData.push(shopPro[i]);
+                  }).catch(re => {
+                    console.log(re);
+                  })
+                } else {
+                  shopPro[i].skuCkVal = [];
+                  this.skuData.push(shopPro[i]);
+                }
+              } else {
+                if (shopPro[i].type != 3) {
+                  /*查询属性对应的属性值*/
+                  let pram = {page: 1, limit: 10000, proid: shopPro[i].id}
+                  this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
+                    //console.log(res.data.data);
+                    shopPro[i].values = res.data.data.data;
+                    shopPro[i].skuCkVal =[];
+                    this.noSkuData.push(shopPro[i]);
+                  }).catch(re => {
+                    console.log(re);
+                  })
+                } else {
+                  shopPro[i].skuCkVal ="";
+                  this.noSkuData.push(shopPro[i]);
+                }
+              }
+            } else {
+              this.skuData = [];
+              this.noSkuData = [];
+            }
+          }
+          //console.log(this.skuData);
+          console.log(this.noSkuData);
+        }).catch(re => {
+          console.log(re);
+        })
+      },
+
+      /*笛卡尔积函数*/
+      calcDescartes:function(array) {
+        if (array.length < 2) return array[0] || [];
+        return [].reduce.call(array, function (col, set) {
+          var res = [];
+          col.forEach(function (c) {
+            set.forEach(function (s) {
+              var t = [].concat(Array.isArray(c) ? c : [c]);
+              t.push(s);
+              res.push(t);
+            })
+          });
+          return res;
+        });
+      },
+      /*SKU属性复选框的事件*/
+      skuCheckData: function () {
+        this.cols=[];
+        this.tableData=[];
+        let arr=[];
+        var flog=true;
+        for (let i = 0; i <this.skuData.length ; i++) {
+          /*拼接动态表头*/
+          this.cols.push({id:this.skuData[i].id,nameCH:this.skuData[i].nameCH,name:this.skuData[i].name});
+          /*处理调用笛卡尔积的参数*/
+          arr.push(this.skuData[i].skuCkVal);
+          if(this.skuData[i].skuCkVal.length==0){
+            flog=false;
+            break;
+          }
+        }
+        if(flog==true){
+          /*笛卡尔积返回的数据*/
+          let data=this.calcDescartes(arr);
+          /*循环处理动态表格的数据*/
+          for (let i = 0; i <data.length ; i++) {
+            let jsonData={};
+            if(typeof data[i]=="object"){
+              for (let j = 0; j <data[i].length ; j++) {
+                let key=this.cols[j].name;
+                jsonData[key]=data[i][j];
+              }
+            }else {
+              let key=this.cols[0].name;
+              jsonData[key]=data[i];
+            }
+            this.tableData.push(jsonData);
+          }
+          //console.log(this.tableData);
+        }
+        this.proTableShow=flog;
+      },
+      /*--------------处理分类的下拉框--------------*/
+      queryTypeData: function () {
+        this.$ajax.get("http://localhost:8080/api/type/selectType").then(res => {
+          //console.log(res.data.data);
+          this.shopTypeData = res.data.data;
+          this.queryTypeDataTwo();
+          for (let i = 0; i < this.typeData.length; i++) {
+            this.typeDataName = "";
+            this.isParent(this.typeData[i]);
+            //处理下拉框的name值
+            this.typeData[i].name = this.typeDataName.split("/").reverse().join("/").substr(0, this.typeDataName.length - 1)
+          }
+        }).catch(re => {
+          console.log(re);
+        })
+      },
+      /*判断顶层数据  拼接下拉框的name值*/
+      isParent: function (data) {
+        if (data.pid != 0) {
+          this.typeDataName += "/" + data.name;
+          for (let i = 0; i < this.shopTypeData.length; i++) {
+            if (data.pid == this.shopTypeData[i].id) {
+              this.isParent(this.shopTypeData[i]);
+              break;
+            }
+          }
+        } else {
+          this.typeDataName += "/" + data.name;
+        }
+      },
+      /*遍历循环每条数据调用判断是否是底层数据*/
+      queryTypeDataTwo: function () {
+        for (let i = 0; i < this.shopTypeData.length; i++) {
+          this.isLastData(this.shopTypeData[i]);
+        }
+      },
+      /*判断是否是底层数据*/
+      isLastData: function (data) {
+        var flog = true;
+        for (let i = 0; i < this.shopTypeData.length; i++) {
+          if (data.id == this.shopTypeData[i].pid) {
+            flog = false;
+            return flog;
+          }
+        }
+        if (flog == true) {
+          this.typeData.push(data);
+        }
+      },
+      /*-----------查询商品的展示数据------------*/
       queryCommodtiy: function () {
         let pram = {page: this.page, limit: this.limit, commName: this.commName, commBandId: this.commBandId};
         this.$ajax.get("http://localhost:8080/api/commodity/selectCommodity?" + this.$qs.stringify(pram)).then(res => {
@@ -199,19 +590,19 @@
         this.updateCommFormFolg = true;
         this.$ajax.get("http://localhost:8080/api/commodity/selectCommodityByid?id=" + row.id).then(res => {
           //console.log(res.data.data);
-          this.updateCommForm=res.data.data;
-          this.imageUrl=this.updateCommForm.imagepath;
+          this.updateCommForm = res.data.data;
+          this.imageUrl = this.updateCommForm.imagepath;
         }).catch(re => {
           console.log(re);
         })
       },
       /*提交修改*/
       updateCommlData: function () {
-        this.$ajax.post("http://localhost:8080/api/commodity/updateCommodity?"+this.$qs.stringify(this.updateCommForm)).then(res=>{
+        this.$ajax.post("http://localhost:8080/api/commodity/updateCommodity?" + this.$qs.stringify(this.updateCommForm)).then(res => {
           alert(res.data.message);
           this.updateCommFormFolg = false;
           this.queryCommodtiy();
-        }).catch(re=>{
+        }).catch(re => {
           console.log(re);
         });
       },
@@ -234,17 +625,17 @@
         return isJPG && isLt2M;
       },
       /*修改删除isDel属性*/
-      toUpdateIsDel:function(row){
-        this.delId=row.id;
-        this.toUpdateIsDelFlog=true;
+      toUpdateIsDel: function (row) {
+        this.delId = row.id;
+        this.toUpdateIsDelFlog = true;
       },
       /*提交修改删除isDel属性的数据  */
-      updateIsDel:function(){
-        this.$ajax.post("http://localhost:8080/api/commodity/deleteCommodity?id="+this.delId+"&isDel="+this.isDel).then(res=>{
+      updateIsDel: function () {
+        this.$ajax.post("http://localhost:8080/api/commodity/deleteCommodity?id=" + this.delId + "&isDel=" + this.isDel).then(res => {
           alert(res.data.message);
           this.toUpdateIsDelFlog = false;
           this.queryCommodtiy();
-        }).catch(re=>{
+        }).catch(re => {
           console.log(re);
         })
       },
@@ -277,10 +668,10 @@
           }
         }
       },
-      isDelData:function (row, column, value, index) {
-        if(value==0){
+      isDelData: function (row, column, value, index) {
+        if (value == 0) {
           return "不删";
-        }else {
+        } else {
           return "删除";
         }
       }
