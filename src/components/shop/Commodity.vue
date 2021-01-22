@@ -53,7 +53,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="resetForm('commodityForm')">重置</el-button>
-        <el-button type="primary" style="margin-top: 12px;" @click="next">下一步</el-button>
+        <el-button type="primary" style="margin-top: 12px;" @click="next('commodityForm')">下一步</el-button>
       </el-form-item>
     </el-form>
 
@@ -164,7 +164,7 @@
     data() {
       return {
         /*步骤一的属性*/
-        active: 1,
+        active: 0,
         imageUrl: "",
         /*下拉框所有数据*/
         shopData: [],
@@ -216,8 +216,12 @@
         this.$refs[commodityForm].resetFields();
       },
       /*步骤条的下一步*/
-      next: function () {
-        if (this.active++ > 2) this.active = 0;
+      next: function (commodityForm) {
+        this.$refs[commodityForm].validate((flog) => {
+          if(flog==true){
+            if (this.active++ > 2) this.active = 0;
+          }
+        })
       },
       /*处理图片上传*/
       imgsaveFile: function (response, file) {
@@ -267,7 +271,7 @@
         this.commodityForm.sku=JSON.stringify(this.tableData);
         //console.log(this.commodityForm);
         this.$ajax.post("http://localhost:8080/api/commodity/saveCommodity?"+this.$qs.stringify(this.commodityForm)).then(res=>{
-          console.log(res.data);
+          console.log(res.data.message);
         }).catch(re=>{
           console.log(re);
         })

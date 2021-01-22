@@ -382,7 +382,7 @@
         this.queryProValData();
       },
       /*查询属性对应的属性值*/
-      queryProValData:function(proid){
+      queryProValData:function(){
         this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?page="+this.valpage+"&limit="+this.vallimit+"&proid="+this.proidData+"&craname="+this.craname).then(res=>{
           //console.log(res.data.data);
           this.ProValueTable=res.data.data.data;

@@ -63,7 +63,7 @@ export default {
                 },
                 {
                     icon: 'el-icon-menu',
-                    index: '4',
+                    index: '5',
                     title: '商品类型',
                     subs: [
                         {
@@ -76,9 +76,12 @@ export default {
                             index: 'ShopProperty',
                             title: '属性管理'
                         },{
-                            index: 'Commodity',
+                            index: '/Commodity',
                             title: '商品注册'
-                        },
+                        },{
+                            index: 'QueryComm',
+                            title: '商品管理'
+                      },
                     ]
                 }
             ]

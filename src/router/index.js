@@ -34,6 +34,10 @@ export default new Router({
           path: '/Commodity',
           component: () => import(/* webpackChunkName: "dashboard" */ '../components/shop/Commodity.vue'),
           meta: { title: '商品注册' }
+        },{
+          path: '/QueryComm',
+          component: () => import(/* webpackChunkName: "dashboard" */ '../components/shop/QueryComm.vue'),
+          meta: { title: '商品管理' }
         },
       ]
     },
