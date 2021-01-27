@@ -43,7 +43,7 @@
       <el-form-item label="图片">
         <el-upload
           class="avatar-uploader"
-          action="http://localhost:8080/api/shopdata/saveFile"
+          action="http://localhost:8080/api/commodity/upFile?"
           :show-file-list="false"
           :on-success="imgsaveFile"
           :before-upload="beforeAvatarUpload">
@@ -287,50 +287,18 @@
           //console.log(res.data.data);
           let shopPro = res.data.data;
           //处理skuData  和  noSkuData的数据
-          for (let i = 0; i < shopPro.length; i++) {
-            if (shopPro.length > 0) {
-              /*判断是否是SKU属性*/
-              if (shopPro[i].isSKU == 0) {
-                /*判断是否是输入框*/
-                if (shopPro[i].type != 3) {
-                  /*查询属性对应的属性值*/
-                  let pram = {page: 1, limit: 10000, proid: shopPro[i].id}
-                  this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
-                    //console.log(res.data.data);
-                    shopPro[i].values = res.data.data.data;
-                    shopPro[i].skuCkVal = [];
-                    this.skuData.push(shopPro[i]);
-                  }).catch(re => {
-                    console.log(re);
-                  })
-                } else {
-                  shopPro[i].skuCkVal = [];
-                  this.skuData.push(shopPro[i]);
-                }
-              } else {
-                if (shopPro[i].type != 3) {
-                  /*查询属性对应的属性值*/
-                  let pram = {page: 1, limit: 10000, proid: shopPro[i].id}
-                  this.$ajax.get("http://localhost:8080/api/val/selectByIdLimit?" + this.$qs.stringify(pram)).then(res => {
-                    //console.log(res.data.data);
-                    shopPro[i].values = res.data.data.data;
-                    shopPro[i].skuCkVal =[];
-                    this.noSkuData.push(shopPro[i]);
-                  }).catch(re => {
-                    console.log(re);
-                  })
-                } else {
-                  shopPro[i].skuCkVal ="";
-                  this.noSkuData.push(shopPro[i]);
-                }
-              }
-            } else {
-              this.skuData = [];
-              this.noSkuData = [];
+          for (let i = 0; i <shopPro.skuData.length ; i++) {
+            shopPro.skuData[i].skuCkVal=[];
+          }
+          for (let i = 0; i <shopPro.noSkuData.length ; i++) {
+            if(shopPro.noSkuData[i].type!=3){
+              shopPro.noSkuData[i].skuCkVal=[];
+            }else {
+              shopPro.noSkuData[i].skuCkVal="";
             }
           }
-          //console.log(this.skuData);
-          console.log(this.noSkuData);
+          this.skuData=shopPro.skuData;
+          this.noSkuData=shopPro.noSkuData;
         }).catch(re => {
           console.log(re);
         })

@@ -107,8 +107,8 @@
         this.$ajax.post("http://localhost:8080/api/type/saveType?"+this.$qs.stringify(this.addForm)).then(res=>{
           //console.log(res.data);
           alert(res.data.message);
-          this.quesyData();
           this.saveTypeForm=false;
+          location.reload();
         }).catch(re => {
           console.log(re);
         })
@@ -128,7 +128,7 @@
         this.$ajax.post("http://localhost:8080/api/type/updateType?"+this.$qs.stringify(this.updateForm)).then(res=>{
           alert(res.data.message);
           this.updateTypeForm=false;
-          this.quesyData();
+          location.reload();
         }).catch(re=>{
           console.log(re);
         })
