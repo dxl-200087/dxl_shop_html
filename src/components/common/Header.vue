@@ -55,7 +55,7 @@ export default {
         return {
             collapse: false,
             fullscreen: false,
-            name: 'linxin',
+            name: '空白',
             image:"",
             message: 2
         };
@@ -73,6 +73,7 @@ export default {
         handleCommand(command) {
             if (command == 'loginout') {
                 localStorage.removeItem('ms_username');
+                localStorage.removeItem('imgpath');
                 this.$router.push('/login');
             }
         },

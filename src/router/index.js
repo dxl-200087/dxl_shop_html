@@ -38,6 +38,10 @@ export default new Router({
           path: '/QueryComm',
           component: () => import(/* webpackChunkName: "dashboard" */ '../components/shop/QueryComm.vue'),
           meta: { title: '商品管理' }
+        },{
+          path: '/Role',
+          component: () => import(/* webpackChunkName: "dashboard" */ '../components/user/Role.vue'),
+          meta: { title: '权限管理' }
         },
       ]
     },{
