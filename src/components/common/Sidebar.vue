@@ -95,6 +95,10 @@
               {
                 index: 'Role',
                 title: '权限管理'
+              },
+              {
+                index: 'Persona',
+                title: '角色管理'
               }
             ]
           }

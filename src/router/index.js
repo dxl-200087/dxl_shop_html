@@ -42,6 +42,10 @@ export default new Router({
           path: '/Role',
           component: () => import(/* webpackChunkName: "dashboard" */ '../components/user/Role.vue'),
           meta: { title: '权限管理' }
+        },{
+          path: '/Persona',
+          component: () => import(/* webpackChunkName: "dashboard" */ '../components/user/Persona.vue'),
+          meta: { title: '角色管理' }
         },
       ]
     },{
