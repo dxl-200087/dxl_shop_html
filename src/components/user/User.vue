@@ -153,6 +153,23 @@
       </div>
     </el-dialog>
 
+    <!--赋角色-->
+    <el-dialog title="修改用户" :visible.sync="userPersonaForm">
+      <el-checkbox-group v-model="userPerCk">
+        <el-checkbox border
+          v-for="data in personaDate"
+          :key="data.id"
+          :label="data.id"
+          :value="data.id">
+          {{data.name}}
+        </el-checkbox>
+      </el-checkbox-group>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="userPersonaForm = false">取 消</el-button>
+        <el-button type="primary" @click="userPersonaData">确 定</el-button>
+      </div>
+    </el-dialog>
+
 
   </div>
 </template>
@@ -190,17 +207,48 @@
           deptId:"",
         },
         /*赋角色*/
-
+        userPersonaForm:false,
+        userPerCk:[], //赋角色数据
+        personaDate:[], //复选框数据
+        userPerData:[], //回显选中的数据
+        uid:""
       }
     },
     created:function(){
       this.queryUserData();
     },
     methods:{
-      /*赋角色*/
-      toUserPersonaForm:function(row){
-
+      userPersonaData:function(){
+        //console.log(this.userPerCk);
+        this.$ajax.post("http://localhost:8080/api/user/addUserPer?uid="+this.uid+"&userPerList="+this.userPerCk).then(res=>{
+          alert(res.data.message);
+          this.userPersonaForm=false;
+        }).catch(re=>{
+          console.log(re);
+        })
       },
+      /*赋角色的回显*/
+      toUserPersonaForm:function(row){
+        this.userPerCk=[];
+        this.uid=row.id;
+        this.userPersonaForm=true;
+        this.queryPersona(row.id);
+      },
+      /*查询所有的角色和已有的角色数据*/
+      queryPersona:function(id){
+        //console.log(id);
+        this.$ajax.get("http://localhost:8080/api/user/selectGiveUserPer?id="+id).then(res=>{
+          //console.log(res.data.data);
+          this.personaDate=res.data.data.perList;
+          this.userPerData=res.data.data.userper;
+          for (let i = 0; i <this.userPerData.length ; i++) {
+            this.userPerCk.push(this.userPerData[i].rid);
+          }
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+
       /*修改弹框*/
       toUpdateUserForm:function(row){
         this.updateUserForm=true;
@@ -239,16 +287,17 @@
         }
         return isJPG && isLt2M;
       },
+
       /*查询所有的数据展示*/
       queryUserData:function () {
-        console.log(this.dateValue);
+        //console.log(this.dateValue);
         var searchData={page:this.page,limit:this.limit,crname:this.crname};
         if(this.dateValue!=null){
           searchData.beginDate=this.dateValue[0];
           searchData.endDate=this.dateValue[1];
         }
         this.$ajax.get("http://localhost:8080/api/user/selectUserData?"+this.$qs.stringify(searchData)).then(res=>{
-          console.log(res.data.data);
+          //console.log(res.data.data);
           this.count=res.data.data.count;
           this.userData=res.data.data.data;
         }).catch(re=>{
