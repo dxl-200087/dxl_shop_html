@@ -93,6 +93,10 @@
             title: '用户类型',
             subs: [
               {
+                index: 'User',
+                title: '用户管理'
+              },
+              {
                 index: 'Role',
                 title: '权限管理'
               },

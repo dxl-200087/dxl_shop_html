@@ -58,7 +58,7 @@
     </el-dialog>
 
     <!--修改模板-->
-    <el-dialog title="新增角色" :visible.sync="updatePersonaForm">
+    <el-dialog title="修改角色" :visible.sync="updatePersonaForm">
       <el-form ref="updateData" :model="updateData" :rules="rules" label-width="80px" style="width: 500px;">
         <el-form-item label="角色名称" prop="name">
           <el-input v-model="updateData.name"></el-input>
