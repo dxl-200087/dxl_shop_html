@@ -139,7 +139,7 @@
           console.log(re);
         })
       },
-      /*修改权限数据*/
+      /*修改权限数据弹框回显*/
       updateRole: function (node, data) {
         //alert(data.id);
         this.updateRoleForm = true;
@@ -150,6 +150,7 @@
           console.log(re);
         })
       },
+      //修改提交
       updateRoleData: function () {
         //console.log(this.updateForm);
         this.$ajax.post("http://localhost:8080/api/role/updateRole?"+this.$qs.stringify(this.updateForm)).then(res => {

@@ -22,14 +22,11 @@
         :formatter="isdelData">
       </el-table-column>
       <el-table-column
-        prop="createDate"
-        label="创建时间">
-      </el-table-column>
-      <el-table-column
         prop="id"
         label="操作">
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="toUpdatePersonaForm(scope.row)">修改</el-button>
+          <el-button type="primary" size="mini" @click="toURoleMissForm(scope.row)">赋权限</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -76,6 +73,24 @@
       </div>
     </el-dialog>
 
+    <!--赋权限模板-->
+    <el-dialog title="赋权限" :visible.sync="addPersonaMissForm">
+      <el-tree
+        :data="treeData"
+        show-checkbox
+        node-key="id"
+        :default-checked-keys="[]"
+        :props="defaultProps"
+        :expand-on-click-node="false"
+        accordion
+        ref="tree">
+      </el-tree>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="addPersonaMissForm = false">取 消</el-button>
+        <el-button type="primary" @click="addPersonaMissData()">确 定</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -109,12 +124,107 @@
         rules:{
           name:[{ required: true, message: '请输入角色名称', trigger: 'blur' }],
           isDel:[{ required: true, message: '请选择是否删除', trigger: 'change' }]
-        }
+        },
+        /*赋权限*/
+        addPersonaMissForm:false,//赋权限弹框
+        defaultProps:{children:'children',label:'label'},
+        treeData:[],//树结构数据
+        permissionsDataStr:"",//处理树结构拼接的字符串
+        rid:"",//赋角色id
+        roleData:"",  //所有的权限数据
       }
     },created:function(){
       this.queryPersonaData();
     },
     methods: {
+      /*角色赋权限*/
+      addPersonaMissData:function(){
+        let roleMenuId = [].concat(this.$refs.tree.getCheckedKeys(), this.$refs.tree.getHalfCheckedKeys())
+        //console.log(roleMenuId);
+        this.$ajax.post("http://localhost:8080/api/persona/addRoleMenuData?rid="+this.rid+"&roleMenuId="+roleMenuId).then(res=>{
+          alert(res.data.message);
+          this.addPersonaMissForm=false;
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+
+      /*角色赋权限回显*/
+      toURoleMissForm:function(row){
+        //alert(row.id);
+        this.rid=row.id;
+        this.addPersonaMissForm=true;
+        this.treeData=[];
+        this.$ajax.get("http://localhost:8080/api/persona/selectPersonaOrMiss?rid="+row.id).then(res=>{
+          this.roleData=res.data.data.roleData;
+          /*调用遍历循环判断顶层数据*/
+          this.queryTop();
+          /*回显数据*/
+          this.checkedData(res.data.data.roleMissData,this.roleData);
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+      /*回显该角色有的权限数据*/
+      checkedData:function(data,roleData){
+        //console.log(data)
+        if(data.length>0){
+          let ckArr=[];
+          for (let i = 0; i <data.length ; i++) {
+            for (let j = 0; j <roleData.length ; j++) {
+              /*判断type是否是菜单*/
+              if(data[i].mid==roleData[j].id&&roleData[j].type==1){
+                ckArr.push(data[i].mid);
+              }
+            }
+          }
+          this.$nextTick(() => {
+            this.$refs.tree.setCheckedKeys(ckArr);
+          });
+          /*/!*另一种的回显方法*!/
+          let arr=[];
+          for (let i = 0; i <data.length ; i++) {
+            arr.push(data[i].mid);
+          }
+          let that = this
+          setTimeout(function() {
+            arr.forEach(value => {
+              that.$refs.tree.setChecked(value, true, false);
+            });
+          }, 500);*/
+        }
+      },
+      /*判断顶层数据*/
+      queryTop:function(){
+        for (let i = 0; i <this.roleData.length ; i++) {
+          if(this.roleData[i].pid==1){
+            this.permissionsDataStr="";
+            this.queryRoleDateStr(this.roleData[i]);
+            this.treeData.push(JSON.parse(this.permissionsDataStr));
+          }
+        }
+      },
+      /*拼接树结构数据*/
+      queryRoleDateStr:function(data){
+        if (data.type == 0) {
+          this.permissionsDataStr += '{"id":' + data.id + ',"label":"' + data.name + '","children":[';
+          let count = 0;
+          for (let i = 0; i < this.roleData.length; i++) {
+            if (this.roleData[i].pid == data.id) {
+              count++;
+              this.queryRoleDateStr(this.roleData[i]);
+              this.permissionsDataStr += ",";
+            }
+          }
+          if (count != 0) {
+            this.permissionsDataStr = this.permissionsDataStr.substr(0, this.permissionsDataStr.length - 1);
+          }
+          this.permissionsDataStr += ']}';
+        } else {
+          this.permissionsDataStr += '{"id":' + data.id + ',"label":"' + data.name + '"}';
+        }
+      },
+
       /*修改弹框*/
       toUpdatePersonaForm:function(row){
         this.updatePersonaForm=true;
