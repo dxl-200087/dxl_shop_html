@@ -38,6 +38,9 @@
         <el-form-item label="节点路径">
           <el-input v-model="addForm.url"></el-input>
         </el-form-item>
+        <el-form-item label="权限图标" v-if="addForm.pid==1">
+          <el-input v-model="addForm.icon"></el-input>
+        </el-form-item>
         <el-form-item label="节点类型">
           <el-radio-group v-model="addForm.type">
             <el-radio :label="0">目录</el-radio>
@@ -59,6 +62,9 @@
         </el-form-item>
         <el-form-item label="节点路径">
           <el-input v-model="updateForm.url"></el-input>
+        </el-form-item>
+        <el-form-item label="权限图标" v-if="updateForm.pid==1">
+          <el-input v-model="updateForm.icon"></el-input>
         </el-form-item>
         <el-form-item label="节点类型">
           <el-radio-group v-model="updateForm.type">

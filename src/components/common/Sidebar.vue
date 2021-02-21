@@ -59,54 +59,10 @@
       return {
         collapse: false,
         items: [
-          {
-            icon: 'el-icon-s-home',
-            index: 'show',
-            title: '系统首页'
-          },
-          {
-            icon: 'el-icon-menu',
-            index: 'shop',
-            title: '商品类型',
-            subs: [
-              {
-                index: 'Type',
-                title: '类型管理'
-              }, {
-                index: 'ShopData',
-                title: '品牌管理'
-              }, {
-                index: 'ShopProperty',
-                title: '属性管理'
-              }, {
-                index: 'Commodity',
-                title: '商品注册'
-              }, {
-                index: 'QueryComm',
-                title: '商品管理'
-              },
-            ]
-          },
-          {
-            icon: 'el-icon-user',
-            index: 'user',
-            title: '用户类型',
-            subs: [
-              {
-                index: 'User',
-                title: '用户管理'
-              },
-              {
-                index: 'Role',
-                title: '权限管理'
-              },
-              {
-                index: 'Persona',
-                title: '角色管理'
-              }
-            ]
-          }
-        ]
+
+        ], //处理好的导航栏展示数据
+        userMenuData:"", //所拥有的权限数据数据
+        dataStr:""//拼接的字符串数据
       };
     },
     computed: {
@@ -120,6 +76,48 @@
         this.collapse = msg;
         bus.$emit('collapse-content', msg);
       });
+      let name = localStorage.getItem('ms_username');
+      this.queryUserMenu(name);
+    },
+    methods:{
+      queryUserMenu:function (name) {
+        //alert(name);
+        this.$ajax.get("http://localhost:8080/api/user/selectUserMeunData?name="+name).then(res=>{
+          console.log(res.data.data);
+          this.userMenuData=res.data.data;
+          this.initTop();
+        }).catch(re=>{
+          console.log(re);
+        })
+      },
+      initTop:function () {
+        for (let i = 0; i <this.userMenuData.length ; i++) {
+          if(this.userMenuData[i].pid==1){
+            this.dataStr='';
+            this.initItems(this.userMenuData[i]);
+            this.items.push(JSON.parse(this.dataStr))
+          }
+        }
+      },
+      initItems:function (data) {
+        if(data.type==0){
+          this.dataStr+='{"icon":"'+data.icon+'","index":"'+data.url+'","title":"'+data.name+'","subs": [';
+          let count=0;
+          for (let i = 0; i <this.userMenuData.length ; i++) {
+            if(this.userMenuData[i].pid==data.id){
+              count++;
+              this.initItems(this.userMenuData[i]);
+              this.dataStr+=',';
+            }
+          }
+          if(count!=0){
+            this.dataStr=this.dataStr.substr(0,this.dataStr.length-1);
+          }
+          this.dataStr += ']}';
+        }else {
+          this.dataStr+='{"icon":"'+data.icon+'","index":"'+data.url+'","title":"'+data.name+'"}';
+        }
+      }
     }
   };
 </script>
